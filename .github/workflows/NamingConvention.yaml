@@ -1,0 +1,44 @@
+name: Check Pull Request and Naming Convention
+
+on: pull_request
+
+jobs:
+  check_pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Check if PR target branch is ok
+        run: |
+          branch_name="${GITHUB_HEAD_REF}"
+          echo "PR branch name: $branch_name"
+          target_branch="${GITHUB_BASE_REF}"
+          echo "Target branch: $target_branch"
+
+          dev_regex="^(feature)/PUL-[0-9]+.*$"
+          if [[ "$branch_name" =~ $dev_regex ]]; then
+            echo "Branch name matches the regex pattern."
+            if [[ "$target_branch" != "DevelopeBranch1" ]]; then
+              echo "But target branch is not 'DevelopeBranch1'. Failing..."
+              exit 1
+            fi
+          else
+            echo "Branch name does not match the required pattern. Failing..."
+            exit 1
+          fi
+        shell: bash
+
+      - name: Check PR title format
+        run: |
+          pr_title=$(jq -r .pull_request.title "$GITHUB_EVENT_PATH")
+          echo "PR Title: $pr_title"
+
+          pr_regex="^feat\\(PUL-[0-9]+.*\\):"
+          if [[ "$pr_title" =~ $pr_regex ]]; then
+            echo "PR title matches the required format."
+          else
+            echo "PR title does not match the required format. Failing..."
+            exit 1
+          fi
